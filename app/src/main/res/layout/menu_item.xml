@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:background="@android:color/white"
+    android:orientation="horizontal"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_menu_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|start"
+                android:layout_marginEnd="8dp"
+                android:maxLines="2"
+                android:text="Mutton Lollipop(4 pieces)"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:textStyle="normal" />
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:layout_marginTop="2dp">
+
+            <TextView
+                android:id="@+id/tv_menu_price"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|start"
+                android:maxLines="1"
+                android:text="@string/rs"
+                android:textSize="14sp"
+                android:textStyle="normal" />
+
+        </FrameLayout>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/border_squre"
+        android:orientation="horizontal"
+        android:padding="1dp">
+
+        <Button
+            android:id="@+id/btn_remove_quantity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:padding="8dp"
+            android:text="-"
+            android:textColor="@color/colorAccent"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btn_add_menu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:padding="8dp"
+            android:text="Add"
+            android:textColor="@color/colorAccent" />
+
+        <Button
+            android:id="@+id/btn_add_quantity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:padding="8dp"
+            android:text="+"
+            android:textColor="@color/colorAccent"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+
+</LinearLayout>

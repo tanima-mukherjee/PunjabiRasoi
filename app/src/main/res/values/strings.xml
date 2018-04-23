@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Punjabi Rasoi</string>
+    <string name="restaurant_quote">Punjabi Rasoi helps you order <br /> great food near you</string>
+    <string name="tag_line">GOOD FOOD.GREAT LIFE</string>
+    <string name="rs">\u20B9 %1$s</string>
+    <string name="package_charge">\u20B9 0</string>
+    <string name="delivery_charge">\u20B9 0</string>
+    <string name="parcel_charge">Parcel Charge (\u20B9 5/dish)</string>
+    <string name="empty_cart">Your cart is Empty \n Add something from the Menu</string>
+
+
+</resources>
