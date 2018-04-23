@@ -5,13 +5,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
-import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -20,10 +19,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
+import com.mukesh.OtpView;
 import com.nostra13.universalimageloader.core.ImageLoader;
 
 import org.json.JSONArray;
@@ -63,11 +65,10 @@ public class CartActivity extends AppCompatActivity {
     private TextView gst;
     private TextView toPay;
     private TextView discountAmount;
-    private TextInputLayout tilPhone;
-    private TextInputEditText etPhone;
     private Button btnContinue;
     private Button btnApplyCoupon;
     private ViewSwitcher viewSwitcher;
+    private String phoneNumber = "", promoId = "";
     public static ArrayList<CartItem> cartList = new ArrayList<>();
 
 
@@ -95,7 +96,7 @@ public class CartActivity extends AppCompatActivity {
         gst = findViewById(R.id.tv_gst_charge);
         toPay = findViewById(R.id.tv_to_pay);
         discountAmount = findViewById(R.id.tv_discount_amount);
-        viewSwitcher = (ViewSwitcher) findViewById(R.id.viewSwitcher);
+        viewSwitcher = findViewById(R.id.viewSwitcher);
 
 
         coordinatorLayout = findViewById(R.id.coordinator_layout);
@@ -203,11 +204,12 @@ public class CartActivity extends AppCompatActivity {
         if (view.getId() == btnContinue.getId()) {
             Intent i = new Intent(CartActivity.this, OrderActivity.class);
             i.putExtra(OrderActivity.TOTAL_PAY_AMOUNT, totalAmountToPay);
+            i.putExtra(OrderActivity.PROMO_ID, promoId);
+            i.putExtra(OrderActivity.PHONE_NUMBER, phoneNumber);
             startActivity(i);
         }
         if (view.getId() == btnApplyCoupon.getId()) {
             showChangePhoneNumberDialog();
-
         }
     }
 
@@ -217,17 +219,18 @@ public class CartActivity extends AppCompatActivity {
         final View dialogView = inflater.inflate(R.layout.custom_dialog_phone_number, null);
         dialogBuilder.setView(dialogView);
 
-        tilPhone = dialogView.findViewById(R.id.til_phone);
-        etPhone =  dialogView.findViewById(R.id.et_phone);
+        TextInputLayout tilPhone = dialogView.findViewById(R.id.til_phone);
+        final EditText etPhone = dialogView.findViewById(R.id.et_phone);
 
         dialogBuilder.setTitle("Phone Number dialog");
         dialogBuilder.setMessage("Enter phone number below");
         dialogBuilder.setPositiveButton("Done", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
                 //do something with edt.getText().toString();
-                if (prepareExecuteAsync())
-                    new CartActivity.CheckPhoneNumberTask().execute(etPhone.getText().toString());
-              // showOtpDialog();
+                if (etPhone.getText().toString().isEmpty() || etPhone.getText().toString().length() != 10) {
+                    Toast.makeText(CartActivity.this, "Please enter valid phone number", Toast.LENGTH_SHORT).show();
+                } else if (prepareExecuteAsync())
+                    new CheckPhoneNumberTask().execute(etPhone.getText().toString());
             }
         });
         dialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -245,6 +248,7 @@ public class CartActivity extends AppCompatActivity {
         final View dialogView = inflater.inflate(R.layout.custom_dialog_otp, null);
         dialogBuilder.setView(dialogView);
 
+        final OtpView otpView = dialogView.findViewById(R.id.otp_view);
         //tilPhone = dialogView.findViewById(R.id.til_phone);
         //etPhone =  dialogView.findViewById(R.id.et_phone);
 
@@ -252,12 +256,10 @@ public class CartActivity extends AppCompatActivity {
         dialogBuilder.setMessage("Enter OTP below");
         dialogBuilder.setPositiveButton("Done", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
-                Intent j = new Intent(CartActivity.this, CouponActivity.class);
-                j.putExtra(CouponActivity.TOTAL_PAY_AMOUNT, totalAmountToPay);
-                startActivityForResult(j,COUPON_REQUEST_ID);
-
-               /* if (prepareExecuteAsync())
-                    new CartActivity.CheckPhoneNumberTask().execute(etPhone.getText().toString());*/
+                if (otpView.hasValidOTP() && prepareExecuteAsync())
+                    new CheckOTPTask().execute(otpView.getOTP());
+                else
+                    Toast.makeText(CartActivity.this, "Enter valid otp", Toast.LENGTH_SHORT).show();
             }
         });
         dialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -284,8 +286,6 @@ public class CartActivity extends AppCompatActivity {
         private String error_msg = "Server error!";
         private ProgressDialog mDialog = new ProgressDialog(CartActivity.this);
         private JSONObject response;
-        private String phone = "";
-
 
         @Override
         protected void onPreExecute() {
@@ -302,10 +302,62 @@ public class CartActivity extends AppCompatActivity {
                 JSONObject mJsonObject = new JSONObject();
                 mJsonObject.put("phone_number", params[0]);
 
+                Log.e("Send Obj:", mJsonObject.toString());
+
+                response = HttpClient.SendHttpPost(URL.VERIFY_PHONE_NUMBER.getURL(), mJsonObject);
+
+                boolean status = response != null && response.getInt("is_error") == 0;
+                if (status) {
+                    phoneNumber = response.getString("phone");
+                }
+                return status;
+            } catch (JSONException | NullPointerException e) {
+                e.printStackTrace();
+                mDialog.dismiss();
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Boolean status) {
+            mDialog.dismiss();
+            if (status) {
+                showOtpDialog();
+            } else {
+                try {
+                    Snackbar.make(coordinatorLayout, response.getString("err_msg"), Snackbar.LENGTH_LONG).show();
+                } catch (JSONException | NullPointerException e) {
+                    e.printStackTrace();
+                    Snackbar.make(coordinatorLayout, error_msg, Snackbar.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
+
+    private class CheckOTPTask extends AsyncTask<String, Void, Boolean> {
+        private String error_msg = "Server error!";
+        private ProgressDialog mDialog = new ProgressDialog(CartActivity.this);
+        private JSONObject response;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mDialog.setMessage("Submitting phone number...");
+            mDialog.setIndeterminate(true);
+            mDialog.setCancelable(false);
+            mDialog.show();
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            try {
+                JSONObject mJsonObject = new JSONObject();
+                mJsonObject.put("otp", params[0]);
+                mJsonObject.put("phone_number", phoneNumber);
 
                 Log.e("Send Obj:", mJsonObject.toString());
 
-                response = HttpClient.SendHttpPost(URL.PHONE_VERIFY.getURL(), mJsonObject);
+                response = HttpClient.SendHttpPost(URL.VERIFY_OTP.getURL(), mJsonObject);
 
                 boolean status = response != null && response.getInt("is_error") == 0;
 
@@ -321,25 +373,10 @@ public class CartActivity extends AppCompatActivity {
         protected void onPostExecute(Boolean status) {
             mDialog.dismiss();
             if (status) {
-
-                try {
-                    phone = response.getString("phone");
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                showOtpDialog();
-                /*new AlertDialog.Builder(CartActivity.this)
-                        .setView(R.layout.layout_order_placed_dialog)
-                        .setPositiveButton("Home", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                Intent intent = new Intent(CartActivity.this, MainActivity.class);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
-                            }
-                        })
-                        .setCancelable(false)
-                        .show();*/
+                Intent j = new Intent(CartActivity.this, CouponActivity.class);
+                j.putExtra(CouponActivity.TOTAL_PAY_AMOUNT, totalAmountToPay);
+                j.putExtra(CouponActivity.PHONE_NUMBER, phoneNumber);
+                startActivityForResult(j, COUPON_REQUEST_ID);
             } else {
                 try {
                     Snackbar.make(coordinatorLayout, response.getString("err_msg"), Snackbar.LENGTH_LONG).show();
@@ -350,8 +387,6 @@ public class CartActivity extends AppCompatActivity {
             }
         }
     }
-
-
 
 
     private class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHolder> {
@@ -367,7 +402,7 @@ public class CartActivity extends AppCompatActivity {
 
             holder.tvMenuName.setText(cartList.get(position).getMenuName());
             holder.tvCategoryName.setText(cartList.get(position).getCategoryName());
-            holder.tvQuantity.setText(String.format(Locale.US,"%d", cartList.get(position).getQuantity()));
+            holder.tvQuantity.setText(String.format(Locale.US, "%d", cartList.get(position).getQuantity()));
             Resources res = getResources();
 //            holder.tvTotalPrice.setText(String.format(Locale.US,"%d", cartList.get(position).getTotalPrice()));
             holder.tvTotalPrice.setText(res.getString(R.string.rs, cartList.get(position).getTotalPrice() + ""));
@@ -415,6 +450,8 @@ public class CartActivity extends AppCompatActivity {
                 Resources res = getResources();
                 String payable_amount = data.getStringExtra("PAYABLE_AMOUNT");
                 String discount_amount = data.getStringExtra("DISCOUNT_AMOUNT");
+                promoId = data.getStringExtra("PROMO_ID");
+
                 discountAmount.setText(res.getString(R.string.rs, discount_amount));
                 toPay.setText(res.getString(R.string.rs, payable_amount));
                 totalAmountToPay = payable_amount;

@@ -12,8 +12,8 @@ public enum URL {
     AREA_LIST("area"),
     APPLY_COUPON("apply_promo"),
     COUPON_LIST("coupon_list"),
-    VERIFY_OTP("verify_otp"),
-    PHONE_VERIFY("phone_number_verify");
+    VERIFY_PHONE_NUMBER("phone_number_verify"),
+    VERIFY_OTP("verify_otp");
 
 
     public String BASE_URL = "http://thepunjabirasoi.com/api/";

@@ -4,10 +4,10 @@ package ogma.com.punjabirasoi.activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -15,7 +15,6 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -34,6 +33,7 @@ import ogma.com.punjabirasoi.network.NetworkConnection;
 public class CouponActivity extends AppCompatActivity {
 
     public static final String TOTAL_PAY_AMOUNT = "extra_total_amount";
+    public static final String PHONE_NUMBER = "extra_phone_number";
 
     private NetworkConnection connection;
     private RecyclerView recyclerView;
@@ -44,11 +44,16 @@ public class CouponActivity extends AppCompatActivity {
     private CoordinatorLayout coordinatorLayout;
 
     private JSONArray jArr = new JSONArray();
+    private String phoneNumber = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_coupon);
+
+        if (getIntent().hasExtra(PHONE_NUMBER)) {
+            phoneNumber = getIntent().getStringExtra(PHONE_NUMBER);
+        }
 
         connection = new NetworkConnection(this);
         coordinatorLayout = findViewById(R.id.coordinator_layout);
@@ -64,7 +69,7 @@ public class CouponActivity extends AppCompatActivity {
         if (prepareExecuteAsync())
             new CouponActivity.FetchCouponTask().execute();
 
-        if (getIntent().getStringExtra(TOTAL_PAY_AMOUNT) != null ) {
+        if (getIntent().getStringExtra(TOTAL_PAY_AMOUNT) != null) {
             cart_amount = getIntent().getStringExtra(TOTAL_PAY_AMOUNT);
         }
     }
@@ -130,7 +135,7 @@ public class CouponActivity extends AppCompatActivity {
                         int position = getAdapterPosition();
                         String promocode = jArr.optJSONObject(position).optString("id");
                         if (prepareExecuteAsync())
-                            new CouponActivity.FetchApplyCouponTask().execute(promocode,cart_amount);
+                            new CouponActivity.FetchApplyCouponTask().execute(promocode, cart_amount);
                     }
                 });
 
@@ -187,11 +192,13 @@ public class CouponActivity extends AppCompatActivity {
             }
         }
     }
+
     private class FetchApplyCouponTask extends AsyncTask<String, Void, Boolean> {
         private String error_msg = "Server error!";
         private ProgressDialog mDialog = new ProgressDialog(CouponActivity.this);
         private JSONObject response;
         private String payableAmount = "", discountAmount = "";
+        private String promoId = "";
 
         @Override
         protected void onPreExecute() {
@@ -205,8 +212,10 @@ public class CouponActivity extends AppCompatActivity {
         protected Boolean doInBackground(String... params) {
             try {
                 JSONObject mJsonObject = new JSONObject();
-                mJsonObject.put("promo_id",params[0]);
-                mJsonObject.put("cart_amount",params[1]);
+                promoId = params[0];
+                mJsonObject.put("promo_id", params[0]);
+                mJsonObject.put("cart_amount", params[1]);
+                mJsonObject.put("phone_number", phoneNumber);
 
                 Log.e("Send Obj:", mJsonObject.toString());
 
@@ -215,12 +224,6 @@ public class CouponActivity extends AppCompatActivity {
                 if (status) {
                     payableAmount = response.getString("payable_amount");
                     discountAmount = response.getString("discount_amount");
-
-                    Intent intent=new Intent();
-                    intent.putExtra("PAYABLE_AMOUNT",payableAmount);
-                    intent.putExtra("DISCOUNT_AMOUNT",discountAmount);
-                    setResult(RESULT_OK,intent);
-                    finish();
                 }
                 return status;
             } catch (JSONException | NullPointerException e) {
@@ -234,7 +237,12 @@ public class CouponActivity extends AppCompatActivity {
         protected void onPostExecute(Boolean status) {
             mDialog.dismiss();
             if (status) {
-                recyclerAdapter.notifyDataSetChanged();
+                Intent intent = new Intent();
+                intent.putExtra("PAYABLE_AMOUNT", payableAmount);
+                intent.putExtra("DISCOUNT_AMOUNT", discountAmount);
+                intent.putExtra("PROMO_ID", promoId);
+                setResult(RESULT_OK, intent);
+                finish();
             } else {
                 try {
                     Snackbar.make(coordinatorLayout, response.getString("err_msg"), Snackbar.LENGTH_LONG).show();

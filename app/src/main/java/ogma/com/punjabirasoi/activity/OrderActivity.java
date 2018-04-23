@@ -4,13 +4,13 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.MenuItem;
@@ -31,6 +31,9 @@ public class OrderActivity extends AppCompatActivity {
 
 
     public static final String TOTAL_PAY_AMOUNT = "extra_total_amount";
+    public static final String PROMO_ID = "extra_promo_id";
+    public static final String PHONE_NUMBER = "extra_phone_number";
+
     private static final int REQUEST_CODE_SUB_AREA = 130;
 
     private String totalAmount = "";
@@ -62,11 +65,17 @@ public class OrderActivity extends AppCompatActivity {
     private RadioGroup radioGroup;
 
     int radiochecked = 0;
+    private String promoId = "", phoneNumber = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_order);
+
+        if (getIntent().hasExtra(PROMO_ID) && getIntent().hasExtra(PHONE_NUMBER)) {
+            promoId = getIntent().getStringExtra(PROMO_ID);
+            phoneNumber = getIntent().getStringExtra(PHONE_NUMBER);
+        }
 
         if (getSupportActionBar() != null)
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -74,24 +83,25 @@ public class OrderActivity extends AppCompatActivity {
 
         totalAmount = getIntent().getExtras().getString(TOTAL_PAY_AMOUNT);
 
-       // Log.e("onCreate: ", list.size() + " " + totalAmount);
+        // Log.e("onCreate: ", list.size() + " " + totalAmount);
 
-        coordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
+        coordinatorLayout = findViewById(R.id.coordinator_layout);
 
         tilFirstName = findViewById(R.id.til_first_name);
-        etFirstName =  findViewById(R.id.et_first_name);
+        etFirstName = findViewById(R.id.et_first_name);
 
-        tilLastName =  findViewById(R.id.til_last_name);
-        etLastName =  findViewById(R.id.et_last_name);
+        tilLastName = findViewById(R.id.til_last_name);
+        etLastName = findViewById(R.id.et_last_name);
 
         tilEmail = findViewById(R.id.til_email);
-        etEmail =  findViewById(R.id.et_email);
+        etEmail = findViewById(R.id.et_email);
 
         tilPhone = findViewById(R.id.til_phone);
-        etPhone =  findViewById(R.id.et_phone);
+        etPhone = findViewById(R.id.et_phone);
+        etPhone.setText(phoneNumber);
 
         tilAddress = findViewById(R.id.til_address);
-        etAddress =  findViewById(R.id.et_address);
+        etAddress = findViewById(R.id.et_address);
 
         tilArea = findViewById(R.id.til_area);
         etArea = findViewById(R.id.et_area);
@@ -108,7 +118,7 @@ public class OrderActivity extends AppCompatActivity {
     public void onClick(View view) {
         if (view.getId() == R.id.et_area) {
             startActivityForResult(new Intent(this, DeliveryArea.class), REQUEST_CODE_SUB_AREA);
-        }else if (view.getId() == R.id.btn_place_order) {
+        } else if (view.getId() == R.id.btn_place_order) {
             if (validate() && prepareExecuteAsync()) {
                 new PlaceOrderTask().execute(totalAmount,
                         etFirstName.getText().toString().trim(),
@@ -122,7 +132,6 @@ public class OrderActivity extends AppCompatActivity {
             }
         }
     }
-
 
 
     private boolean validate() {
@@ -264,6 +273,8 @@ public class OrderActivity extends AppCompatActivity {
                 jsonObjectForm.put("address", params[5]);
                 jsonObjectForm.put("area", params[6]);
                 jsonObjectForm.put("order_note", params[7]);
+                jsonObjectForm.put("promo_id", promoId);
+                jsonObjectForm.put("phone_number", phoneNumber);
 
                 mJsonObject.put("address_details", jsonObjectForm);
 
